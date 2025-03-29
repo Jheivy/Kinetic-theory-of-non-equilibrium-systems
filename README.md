@@ -10,3 +10,9 @@ This project implements a Fortran program to study non-equilibrium systems based
 This project contributes to understanding the microscopic foundations of thermodynamic irreversibility in non-equilibrium systems.  
 
 Feel free to explore, fork, or contribute to the repository. Suggestions for improvements and extensions are welcome!  
+
+```fortran
+program kinetic_theory
+  implicit none
+  print *, "Welcome to the Kinetic Theory Simulation"
+end program kinetic_theory
