@@ -2,31 +2,30 @@
       implicit none
       real*8 vx,vy,vz,v_mod,T,ta,saved
       integer N,NMC,i,pos,nbin,saved_v4,saved_H,nbucle
-      integer gs,n_v
+      integer gs,n_v,j
       parameter (N = 100000)  ! Número de velocidades
       parameter (T = 5.d-1)  ! Temperatura del sistema
       parameter (v_mod = 1d0) ! Radio de la esfera de velocidades
-      parameter (NMC=100)
+      parameter (NMC=200)
       parameter (nbin=1000)
       parameter (n_v=2) ! Número de dimensiones del espacio de velocidades
-      parameter (saved_v4=1) ! Si no quiero guardar los datos saved=0 y si quiero guardar los datos saved=1
-      parameter (saved_H=0)
-      parameter (gs=0) ! 0 Distribución aleatoria 1 Distribución normal 2 Distribución uniforme !!!La distribución uniforme es igual que la aleatoria
-      parameter (nbucle=1) ! Número de simulaciones
+      parameter (saved_v4=0) ! Si no quiero guardar los datos saved=0 y si quiero guardar los datos saved=1
+      parameter (saved_H=1)
+      parameter (gs=1) ! 0 Distribución aleatoria con módulo 1; 1 Distribución aleatoria en cubo
+      parameter (nbucle=100) ! Número de simulaciones
       dimension vx(N),vy(N),vz(N)
       do i=1,nbucle ! Este bucle es para hacer varias simulaciones e ir guardandolas
             call init_random_seed()
 c           Generar velocidades iniciales
-            call GENERATE_INITIAL_VELOCITIES(N,T, v_mod, vx, vy, vz,gs)
-c           call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v0.dat") ! Guardar velocidades iniciales
+            call GENERATE_INITIAL_VELOCITIES(N,T,v_mod,vx,vy,vz,gs)
+c            call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v0_n.dat") ! Guardar velocidades iniciales
             call DSMC(N,NMC,nbin,i,vx,vy,vz,ta,saved_v4,saved_H,n_v,gs)
 c           ta=ta/(NMC*N)*100
 c           print*,"Tasa de aceptacion: ", ta, "%"
-c           call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v1.dat") ! Guardar velocidades finales
+c            call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v1_n.dat") ! Guardar velocidades finales
 c           call VELOCITIES_HISTOGRAM(N,i,vx,vy,vz)
             print*, "Generando datos para la simulacion",i,"/",nbucle
       end do
-
       print*,"--------------------------------------"
       print*,"-------Simulacion finalizada----------"
       print*,"--------------------------------------"
@@ -100,21 +99,15 @@ c     vz (real): Velocidad en z
                   vz(i) = cos(theta)
             end do
       end if
+      if (gs.eq.1) then
+            call random_number(vx)
+            call random_number(vy)
+            call random_number(vz)
 
-      if (gs.eq.1)then ! Para tener una distribución normal de valores
-            call random_number(rx)
-            call random_number(ry)
-            rx = max(rx, 1.0D-10)
-            vx = sqrt(-2.d0 * log(rx)) * cos(2.d0 * PI * ry)
-            call random_number(rx)
-            call random_number(ry)
-            rx = max(rx, 1.0D-10)
-            vy = sqrt(-2.d0 * log(rx)) * sin(2.d0 * PI * ry)
-
-            call random_number(rz)
-            call random_number(ry)
-            rz = max(rz, 1.0D-10)
-            vz = sqrt(-2.d0 * log(rz)) * cos(2.d0 * PI * ry)
+            ! Transformar para obtener valores en [-1, 1]
+            vx = 2.0d0 * vx - 1.0d0
+            vy = 2.0d0 * vy - 1.0d0
+            vz = 2.0d0 * vz - 1.0d0
       end if
 
       ! Imponer momento igual a 0  
@@ -207,29 +200,33 @@ c     [OUTPUT]
 c     vx,vy,vz (real) Velocidades   
 c     ta (real) Tasa de aceptación   
       implicit none
-      real*8 vx,vy,vz,norm,vel,hist,Ht
+      real*8 vx,vy,vz,norm,vel,hist,Ht,n_v_r
       real*8 sigma_x,sigma_y,sigma_z,rnd1,rnd2,w_max,w,ta,mean_v4
       real*8 v_rel_x,v_rel_y,v_rel_z,rand_acep,value
       integer N,i,p1,NMC,p2,pos,j,counter,saved_v4,nbin,saved_H,val
       integer n_v,gs
       dimension vx(N),vy(N),vz(N),hist(nbin),vel(N)
       character(len=1000) filename,filename2
-      character(len=1000) num_str
+      character(len=1000) num_str,nv_str
 
-
+c      n_v_r=dble(n_v)/2.d0
       if (saved_v4.eq.1) then
-            write(num_str, '(I5)') pos
-            ! Crear el nombre del archivo dinámico
-      if (gs.eq.0)then
-      filename = "Dataframes/random_dis/mean_2/vel2_"//trim(num_str)
-      else if (gs.eq.1)then
-      filename = "Dataframes/normal_dis/mean_2/vel2_"//trim(num_str)
-      end if
+            write(num_str, '(I0)') pos  ! I0 evita espacios extra
+            write(nv_str, '(I0)') n_v  
+
+            ! Construir el nombre de la carpeta y el archivo dinámicamente
+            if (gs.eq.0) then
+                  filename = "Dataframes/random_dis/mean_"
+     &//trim(nv_str)//"/vel"//trim(nv_str)//"_"//trim(num_str)
+            else if (gs.eq.1) then
+                  filename = "Dataframes/normal_dis/mean_"
+     &//trim(nv_str)//"/vel"//trim(nv_str)//"_"//trim(num_str)
+            end if
             ! Abrir archivo con un número de unidad de archivo distinto
-            open(33, file=trim(filename)//".dat")    
+            open(33, file=trim(filename)//".dat", status="unknown")    
       end if
       if (saved_H.eq.1) then
-            write(num_str, '(I5)') pos
+            write(num_str, '(I0)') pos
             ! Crear el nombre del archivo dinámico
             if (gs.eq.0)then
             filename2 = "Dataframes/random_dis/H/h_"//trim(num_str)
@@ -304,9 +301,23 @@ c          Cálculo de <v^4>
             counter = counter + 1  ! Incrementar contador
             if (saved_v4.eq.1)then ! Si no quiero guardar los datos saved=0 y si quiero guardar los datos saved=1
                   if (mod(counter, N) .eq. 0) then 
-                        val=val+1
-                        mean_v4=sum((vx**2+vy**2+vz**2)**(n_v/2))/N
-                        write(33,*) j,mean_v4 ! counter
+                  val=val+1
+                  if (n_v.eq.1)then
+                        mean_v4=sum(sqrt(vx**2+vy**2+vz**2))/N
+                  elseif (n_v.eq.2)then
+                        mean_v4=sum((vx**2+vy**2+vz**2))/N
+                  elseif (n_v.eq.3)then
+                        mean_v4=sum(sqrt(vx**2+vy**2+vz**2)*(
+     &vx**2+vy**2+vz**2))/N
+                  elseif (n_v.eq.4)then
+                        mean_v4=sum((vx**2+vy**2+vz**2)**(2))/N
+                  elseif (n_v.eq.5)then
+                        mean_v4=sum(sqrt(vx**2+vy**2+vz**2
+     &)*(vx**2+vy**2+vz**2)**(2))/N
+                  elseif (n_v.eq.6)then
+                        mean_v4=sum((vx**2+vy**2+vz**2)**(3))/N
+                  end if
+                  write(33,*) j,mean_v4 ! counter
                   end if
             end if
 c          Cálculo de H     
