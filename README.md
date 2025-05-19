@@ -5,7 +5,6 @@ This project implements a Fortran program to study non-equilibrium systems based
 
 ## Key Features  
 - **H-Theorem Calculation**: Tracks the evolution of the system's entropy using Boltzmann's H-Theorem.
-- ![Simulation Example](Graphics/part2/teorema_H.pdf)  
 - **Velocity Distribution Analysis**: Computes histograms of particle speed magnitudes at each Monte Carlo step to observe system dynamics.  
 - **Efficient Collision Modeling**: Simulates particle interactions using probabilistic methods to explore non-equilibrium behavior.  
 - **Customizable Parameters**: Allows adjustments of initial velocity distributions, particle count, and simulation steps for tailored studies.  
