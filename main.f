@@ -8,27 +8,30 @@
       parameter (v_mod = 1d0) ! Radio de la esfera de velocidades
       parameter (NMC=200)
       parameter (nbin=1000)
-      parameter (n_v=2) ! Número de dimensiones del espacio de velocidades
-      parameter (saved_v4=0) ! Si no quiero guardar los datos saved=0 y si quiero guardar los datos saved=1
-      parameter (saved_H=1)
+      parameter (n_v=1) ! Número de dimensiones del espacio de velocidades
+      parameter (saved_v4=1) ! Si no quiero guardar los datos saved=0 y si quiero guardar los datos saved=1
+      parameter (saved_H=0)
       parameter (gs=1) ! 0 Distribución aleatoria con módulo 1; 1 Distribución aleatoria en cubo
-      parameter (nbucle=100) ! Número de simulaciones
+      parameter (nbucle=10) ! Número de simulaciones
       dimension vx(N),vy(N),vz(N)
+      do j=1,200
       do i=1,nbucle ! Este bucle es para hacer varias simulaciones e ir guardandolas
             call init_random_seed()
 c           Generar velocidades iniciales
             call GENERATE_INITIAL_VELOCITIES(N,T,v_mod,vx,vy,vz,gs)
 c            call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v0_n.dat") ! Guardar velocidades iniciales
-            call DSMC(N,NMC,nbin,i,vx,vy,vz,ta,saved_v4,saved_H,n_v,gs)
+            call DSMC(N,j,nbin,i,vx,vy,vz,ta,saved_v4,saved_H,n_v,gs)
 c           ta=ta/(NMC*N)*100
 c           print*,"Tasa de aceptacion: ", ta, "%"
 c            call SAVE_VALUES(N, vx, vy, vz, "Dataframes/v1_n.dat") ! Guardar velocidades finales
-c           call VELOCITIES_HISTOGRAM(N,i,vx,vy,vz)
+            call VELOCITIES_HISTOGRAM(N,i,vx,vy,vz)
             print*, "Generando datos para la simulacion",i,"/",nbucle
+      end do
       end do
       print*,"--------------------------------------"
       print*,"-------Simulacion finalizada----------"
       print*,"--------------------------------------"
+
       end program kinetic_simulation
 
 c----------------------------------------------------------------------------------------
